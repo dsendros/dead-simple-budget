@@ -73,4 +73,4 @@ ADB is at `~/Android/Sdk/platform-tools/adb`.
 
 ## TODO
 
-**App icon** - Find a better app icon. Something that reflects death and budgeting. Maybe a skull with dollar signs for eyes?
+None at this time.
