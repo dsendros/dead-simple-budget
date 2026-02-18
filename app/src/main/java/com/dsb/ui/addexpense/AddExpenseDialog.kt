@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.dsb.data.repository.BudgetRepository
@@ -37,6 +38,7 @@ fun AddExpenseDialog(repository: BudgetRepository, onDismiss: () -> Unit) {
                     value = name,
                     onValueChange = { name = it },
                     label = { Text("Name") },
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )

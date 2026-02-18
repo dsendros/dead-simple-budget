@@ -8,18 +8,18 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 
-fun startOfCurrentWeek(): Long {
-    val monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-    return monday.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+fun startOfCurrentWeek(startDay: DayOfWeek = DayOfWeek.MONDAY): Long {
+    val weekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(startDay))
+    return weekStart.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 }
 
-fun weeksBetween(startMillis: Long, endMillis: Long): Long {
+fun weeksBetween(startMillis: Long, endMillis: Long, startDay: DayOfWeek = DayOfWeek.MONDAY): Long {
     val startDate = Instant.ofEpochMilli(startMillis)
         .atZone(ZoneId.systemDefault()).toLocalDate()
-        .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        .with(TemporalAdjusters.previousOrSame(startDay))
     val endDate = Instant.ofEpochMilli(endMillis)
         .atZone(ZoneId.systemDefault()).toLocalDate()
-        .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        .with(TemporalAdjusters.previousOrSame(startDay))
     return ChronoUnit.WEEKS.between(startDate, endDate) + 1
 }
 

@@ -23,9 +23,11 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.dp
 import com.dsb.data.db.Expense
+import com.dsb.data.db.Infusion
 import com.dsb.data.repository.BudgetRepository
 import com.dsb.util.formatShortDate
 import com.dsb.util.weeksBetween
+import java.time.DayOfWeek
 import java.util.Locale
 
 data class ChartPoint(val dateMillis: Long, val budget: Double)
@@ -33,10 +35,17 @@ data class ChartPoint(val dateMillis: Long, val budget: Double)
 @Composable
 fun ChartScreen(repository: BudgetRepository) {
     val expenses by repository.getExpenses().collectAsState(initial = emptyList())
+    val infusions by repository.getInfusions().collectAsState(initial = emptyList())
     val config by repository.getBudgetConfig().collectAsState(initial = null)
 
-    val chartPoints = remember(expenses, config) {
-        buildChartData(expenses, config?.weeklyAmount ?: 0.0, config?.startDate ?: 0L)
+    val chartPoints = remember(expenses, infusions, config) {
+        buildChartData(
+            expenses,
+            infusions,
+            config?.weeklyAmount ?: 0.0,
+            config?.startDate ?: 0L,
+            DayOfWeek.of(config?.startDayOfWeek ?: 1)
+        )
     }
 
     Column(
@@ -147,27 +156,47 @@ fun ChartScreen(repository: BudgetRepository) {
     }
 }
 
-private fun buildChartData(expenses: List<Expense>, weeklyAmount: Double, startDate: Long): List<ChartPoint> {
+private sealed class TimelineEvent(val dateMillis: Long) {
+    class ExpenseEvent(val amount: Double, dateMillis: Long) : TimelineEvent(dateMillis)
+    class InfusionEvent(val amount: Double, dateMillis: Long) : TimelineEvent(dateMillis)
+}
+
+private fun buildChartData(
+    expenses: List<Expense>,
+    infusions: List<Infusion>,
+    weeklyAmount: Double,
+    startDate: Long,
+    startDay: DayOfWeek
+): List<ChartPoint> {
     if (startDate == 0L || weeklyAmount == 0.0) return emptyList()
 
     val now = System.currentTimeMillis()
-    // Build a point for start date and after each expense
-    val sorted = expenses.sortedBy { it.date }
+
+    // Merge expenses and infusions into a sorted timeline
+    val events = mutableListOf<TimelineEvent>()
+    expenses.forEach { events.add(TimelineEvent.ExpenseEvent(it.amount, it.date)) }
+    infusions.forEach { events.add(TimelineEvent.InfusionEvent(it.amount, it.date)) }
+    events.sortBy { it.dateMillis }
+
     val points = mutableListOf<ChartPoint>()
 
     // Starting point
-    val startBudget = weeksBetween(startDate, startDate) * weeklyAmount
+    val startBudget = weeksBetween(startDate, startDate, startDay) * weeklyAmount
     points.add(ChartPoint(startDate, startBudget))
 
     var runningExpenses = 0.0
-    for (expense in sorted) {
-        runningExpenses += expense.amount
-        val totalBudget = weeksBetween(startDate, expense.date) * weeklyAmount
-        points.add(ChartPoint(expense.date, totalBudget - runningExpenses))
+    var runningInfusions = 0.0
+    for (event in events) {
+        when (event) {
+            is TimelineEvent.ExpenseEvent -> runningExpenses += event.amount
+            is TimelineEvent.InfusionEvent -> runningInfusions += event.amount
+        }
+        val totalBudget = weeksBetween(startDate, event.dateMillis, startDay) * weeklyAmount
+        points.add(ChartPoint(event.dateMillis, totalBudget + runningInfusions - runningExpenses))
     }
 
     // Current point
-    val currentBudget = weeksBetween(startDate, now) * weeklyAmount - runningExpenses
+    val currentBudget = weeksBetween(startDate, now, startDay) * weeklyAmount + runningInfusions - runningExpenses
     if (points.last().dateMillis < now - 3600_000) {
         points.add(ChartPoint(now, currentBudget))
     }

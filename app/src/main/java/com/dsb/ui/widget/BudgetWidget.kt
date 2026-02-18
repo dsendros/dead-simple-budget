@@ -71,7 +71,7 @@ private fun WidgetContent(context: Context, totalSpendable: Double, weeklyRemain
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Total Spendable",
+                text = "Total Budget",
                 style = TextStyle(fontSize = 11.sp, color = LabelColor)
             )
             Text(

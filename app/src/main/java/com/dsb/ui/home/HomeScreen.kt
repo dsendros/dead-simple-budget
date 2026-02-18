@@ -49,7 +49,7 @@ fun HomeScreen(repository: BudgetRepository, showAddExpenseOnLaunch: Boolean = f
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Total Spendable",
+                text = "Total Budget",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

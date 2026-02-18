@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -23,6 +24,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.dsb.data.repository.BudgetRepository
 import com.dsb.ui.chart.ChartScreen
+import com.dsb.ui.goals.GoalsScreen
 import com.dsb.ui.history.HistoryScreen
 import com.dsb.ui.home.HomeScreen
 import com.dsb.ui.settings.SettingsScreen
@@ -31,10 +33,11 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     data object Home : Screen("home", "Home", Icons.Default.Home)
     data object History : Screen("history", "History", Icons.Default.List)
     data object Chart : Screen("chart", "Chart", Icons.Default.BarChart)
+    data object Goals : Screen("goals", "Goals", Icons.Default.Star)
     data object Settings : Screen("settings", "Settings", Icons.Default.Settings)
 }
 
-val bottomNavScreens = listOf(Screen.Home, Screen.History, Screen.Chart, Screen.Settings)
+val bottomNavScreens = listOf(Screen.Home, Screen.History, Screen.Chart, Screen.Goals, Screen.Settings)
 
 @Composable
 fun MainNavigation(repository: BudgetRepository, showAddExpenseOnLaunch: Boolean = false) {
@@ -72,6 +75,7 @@ fun MainNavigation(repository: BudgetRepository, showAddExpenseOnLaunch: Boolean
             composable(Screen.Home.route) { HomeScreen(repository, showAddExpenseOnLaunch) }
             composable(Screen.History.route) { HistoryScreen(repository) }
             composable(Screen.Chart.route) { ChartScreen(repository) }
+            composable(Screen.Goals.route) { GoalsScreen(repository) }
             composable(Screen.Settings.route) { SettingsScreen(repository) }
         }
     }

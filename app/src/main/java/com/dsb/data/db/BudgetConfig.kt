@@ -7,5 +7,6 @@ import androidx.room.PrimaryKey
 data class BudgetConfig(
     @PrimaryKey val id: Int = 1,
     val weeklyAmount: Double,
-    val startDate: Long = System.currentTimeMillis()
+    val startDate: Long = System.currentTimeMillis(),
+    val startDayOfWeek: Int = 1 // java.time.DayOfWeek convention: 1=Monday … 7=Sunday
 )
