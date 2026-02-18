@@ -32,28 +32,50 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.dsb.data.db.Expense
+import com.dsb.data.db.Infusion
 import com.dsb.data.repository.BudgetRepository
 import com.dsb.util.formatDate
 import kotlinx.coroutines.launch
 import java.util.Locale
 
+private sealed interface HistoryItem {
+    val date: Long
+
+    data class ExpenseItem(val expense: Expense) : HistoryItem {
+        override val date get() = expense.date
+    }
+
+    data class InfusionItem(val infusion: Infusion) : HistoryItem {
+        override val date get() = infusion.date
+    }
+}
+
 @Composable
 fun HistoryScreen(repository: BudgetRepository) {
     val expenses by repository.getExpenses().collectAsState(initial = emptyList())
+    val infusions by repository.getInfusions().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     var editingExpense by remember { mutableStateOf<Expense?>(null) }
     var deletingExpense by remember { mutableStateOf<Expense?>(null) }
+    var deletingInfusion by remember { mutableStateOf<Infusion?>(null) }
 
-    if (expenses.isEmpty()) {
+    val items = remember(expenses, infusions) {
+        (expenses.map { HistoryItem.ExpenseItem(it) } +
+                infusions.map { HistoryItem.InfusionItem(it) })
+            .sortedByDescending { it.date }
+    }
+
+    if (items.isEmpty()) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "No expenses yet",
+                text = "No transactions yet",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -65,41 +87,91 @@ fun HistoryScreen(repository: BudgetRepository) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(expenses, key = { it.id }) { expense ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { editingExpense = expense }
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = expense.name,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Text(
-                                text = formatDate(expense.date),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+            items(
+                items,
+                key = {
+                    when (it) {
+                        is HistoryItem.ExpenseItem -> "expense_${it.expense.id}"
+                        is HistoryItem.InfusionItem -> "infusion_${it.infusion.id}"
+                    }
+                }
+            ) { item ->
+                when (item) {
+                    is HistoryItem.ExpenseItem -> {
+                        val expense = item.expense
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { editingExpense = expense }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = expense.name,
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    Text(
+                                        text = formatDate(expense.date),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Text(
+                                    text = String.format(Locale.US, "$%.2f", expense.amount),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                                IconButton(onClick = { deletingExpense = expense }) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Delete",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
                         }
-                        Text(
-                            text = String.format(Locale.US, "$%.2f", expense.amount),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        IconButton(onClick = { deletingExpense = expense }) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = "Delete",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                    }
+
+                    is HistoryItem.InfusionItem -> {
+                        val infusion = item.infusion
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = infusion.note.ifBlank { "Infusion" },
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    Text(
+                                        text = formatDate(infusion.date),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Text(
+                                    text = String.format(Locale.US, "+$%.2f", infusion.amount),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                IconButton(onClick = { deletingInfusion = infusion }) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Delete",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -119,7 +191,7 @@ fun HistoryScreen(repository: BudgetRepository) {
         )
     }
 
-    // Delete confirmation
+    // Delete expense confirmation
     deletingExpense?.let { expense ->
         AlertDialog(
             onDismissRequest = { deletingExpense = null },
@@ -135,6 +207,28 @@ fun HistoryScreen(repository: BudgetRepository) {
             },
             dismissButton = {
                 TextButton(onClick = { deletingExpense = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Delete infusion confirmation
+    deletingInfusion?.let { infusion ->
+        AlertDialog(
+            onDismissRequest = { deletingInfusion = null },
+            title = { Text("Delete infusion?") },
+            text = { Text("Delete \"${infusion.note.ifBlank { "Infusion" }}\" (${String.format(Locale.US, "+$%.2f", infusion.amount)})?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    scope.launch { repository.deleteInfusion(infusion.id) }
+                    deletingInfusion = null
+                }) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deletingInfusion = null }) {
                     Text("Cancel")
                 }
             }
@@ -157,6 +251,7 @@ private fun EditExpenseDialog(expense: Expense, onSave: (Expense) -> Unit, onDis
                     value = name,
                     onValueChange = { name = it },
                     label = { Text("Name") },
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )

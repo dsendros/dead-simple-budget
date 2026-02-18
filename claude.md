@@ -19,13 +19,22 @@ A very simple Android budgeting app built with Kotlin + Jetpack Compose (Materia
   - Tap widget to open app with Add Expense dialog
   - Widget auto-updates when expenses or budget config change
 
+**Phase 3** (implemented): Goals, Infusions, and UX improvements
+  - Renamed "Total Spendable" to "Total Budget" throughout app and widget
+  - Text inputs (expense name, goal title, infusion note) auto-capitalize first letter
+  - One-time infusions: ad hoc additions to total budget, added via Settings, displayed in History
+  - Savings goals: set a goal with title and target amount, fund it from total budget
+  - Goals screen with progress bars, tap to fund, delete support
+  - Chart integrates infusions into the budget-over-time timeline
+  - Total budget formula: `(weeks * weeklyAmount) + totalInfused - totalSpent - totalGoalsFunded`
+
 ## Tech stack
 
 - **Language**: Kotlin
 - **UI**: Jetpack Compose, Material 3, Material Icons Extended
-- **Database**: Room (SQLite) for expenses and budget config
+- **Database**: Room (SQLite) for expenses, budget config, infusions, and goals
 - **Preferences**: DataStore (onboarding flag)
-- **Navigation**: Compose Navigation with bottom nav bar
+- **Navigation**: Compose Navigation with bottom nav bar (5 tabs: Home, History, Chart, Goals, Settings)
 - **Chart**: Custom Canvas drawing (no external charting library)
 - **Min SDK**: 26 (Android 8.0)
 - **Widget**: Jetpack Glance (`glance-appwidget` + `glance-material3`)
@@ -36,16 +45,17 @@ A very simple Android budgeting app built with Kotlin + Jetpack Compose (Materia
 ```
 app/src/main/java/com/dsb/
 ├── data/
-│   ├── db/             # Room database, DAOs, entities (Expense, BudgetConfig)
+│   ├── db/             # Room database, DAOs, entities (Expense, BudgetConfig, Infusion, Goal)
 │   └── repository/     # BudgetRepository
 ├── ui/
 │   ├── theme/          # Material 3 theme with dynamic colors
 │   ├── onboarding/     # First-launch setup screen
-│   ├── home/           # Main screen (total spendable + weekly remaining)
+│   ├── home/           # Main screen (total budget + weekly remaining)
 │   ├── addexpense/     # Add expense dialog
-│   ├── history/        # Expense history list (tap to edit, delete button)
-│   ├── chart/          # Budget-over-time line chart
-│   ├── settings/       # Edit weekly budget amount
+│   ├── history/        # Transaction history (expenses + infusions, sorted by date)
+│   ├── chart/          # Budget-over-time line chart (expenses + infusions)
+│   ├── goals/          # Goals screen (list, add, fund, delete)
+│   ├── settings/       # Edit weekly budget amount + add infusions
 │   ├── widget/         # Glance home screen widget (BudgetWidget, Receiver, Updater)
 │   └── Navigation.kt   # Nav graph + bottom bar
 ├── util/               # Date/week helpers
@@ -60,3 +70,7 @@ cd ~/dead-simple-budget && ./gradlew installDebug
 ```
 
 ADB is at `~/Android/Sdk/platform-tools/adb`.
+
+## TODO
+
+**App icon** - Find a better app icon. Something that reflects death and budgeting. Maybe a skull with dollar signs for eyes?
