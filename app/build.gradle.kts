@@ -69,6 +69,9 @@ dependencies {
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
+    // Splash screen
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
     // Glance (home screen widget)
     implementation("androidx.glance:glance-appwidget:1.1.1")
     implementation("androidx.glance:glance-material3:1.1.1")
